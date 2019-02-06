@@ -1,0 +1,22 @@
+#!/bin/bash
+
+key=/key/key.allocator
+cert=/key/cert.allocator
+ca=/key/cert.ca
+
+ip=$(wget -q -O- --private-key=$key --certificate=$cert  \
+  --ca-certificate=$ca \
+  https://addresses.ops.trustnetworks.com/get/${common_name})
+
+if [ "${ip}" == "" ]
+then
+  echo No IP address allocated.
+  exit 1
+fi
+
+echo "${ip}" > /config/clients/${common_name}
+chmod 644 /config/clients/${common_name}
+
+echo "ifconfig-push ${ip} 255.255.0.0" > $1
+
+exit 0

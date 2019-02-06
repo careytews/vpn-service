@@ -1,0 +1,83 @@
+
+VPN service
+===========
+
+FIXME: Key generation is not in this repo: See the key-initialisation repo.
+
+Component containers
+--------------------
+
+There are two containers here.  The deployment configuration is defined
+in github.com/trustnetworks/analytics.git in the analytics-deployments.yaml
+file.
+
+gcr.io/trust-networks/vpn-ca:
+  Certificate Authority service for the Trust Networks VPN, containing
+  the CA private key.  The CA container offers no external services.
+  The only way to interact with it is to connect using the Google Cloud API
+  for which you need a private key from the cloud project.
+
+gcr.io/trust-networks/vpn-server:
+  Contains an OpenVPN server on UDP port 1194, and cyberprobe configured to
+  grab the packets, and deliver to cybermon.  This container is good to use
+  behind a load-balancer.  The load-balancer will distribute on IP address,
+  so sharing the load, and there is no cross-VPN state.
+
+  No configuration is needed for new VPN clients.  When a new client connects
+  an IP address is allocated, and the CN parameter in the certificate defines
+  client name.  The client name and IP address are written to ipp.txt, and
+  cyberprobe-sync spots the config change and updates cyberprobe.cfg, which
+  makes sure the client name is tagged onto the stream.
+
+Container masters
+-----------------
+
+These containers are managed here:
+  gcr.io/trust-networks/vpn-ca
+  gcr.io/trust-networks/vpn-server
+
+Maintaining the containers
+--------------------------
+
+If you are pushing a new container, update the version.  Otherwise, Google
+will cache the old version.
+
+To change a container version, change the appropriate Makefile, and change
+the image entry in analytics-deployments.yaml
+
+Note for editing YAML files: No tabs!  All indent must be spaces!
+
+The CA certificate
+------------------
+
+If you re-created and push new CA certificates, you will invalidate
+everyone's existing certificate.  Probably best to leave certificates alone.
+
+Certificates
+------------
+
+The private/public keys for web server and CA only need to be created once,
+and then again when they expire.
+
+So, best to leave the certificates alone!
+
+Unless you need to (expiry or a security problem) in which case, you'll want
+to throw the old key away and create a new one, but APPEND the new CA cert
+to the certificate list, so as to do a soft changeover.
+
+  make -f Makefile.key
+  make -f Makefile.key delete
+  make -f Makefile.key upload
+
+Containers
+----------
+
+  make
+  make push
+  
+Deploying the cluster
+---------------------
+
+See github.com/trustnetworks/analytics.git and look at the README file.
+
+
